@@ -14,12 +14,6 @@ Everyday developer conversions in one page. It runs entirely in your browser, so
 * **JWT**: decode the header and payload and check expiry (the signature is not verified)
 * **Timestamp**: convert Unix seconds or milliseconds and ISO dates to UTC, local time, and relative time
 
-## Use it
-
-Open `index.html` in a browser. There is no build step and no dependencies.
-
-To host it for free, go to **Settings → Pages** in your repo, choose the `main` branch, and your tool will be live at `https://<your-username>.github.io/<repo-name>/`.
-
 ## Project structure
 
 ```

@@ -6,34 +6,7 @@
 <title>Dev Toolbox</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#e9eef3;--panel:#fff;--ink:#14213d;--muted:#5b6b80;--line:#c9d3de;--accent:#2b59ff;--on-accent:#fff;--err:#b4440a;--sans:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace}
-@media (prefers-color-scheme:dark){:root{--bg:#101826;--panel:#17212f;--ink:#e6edf5;--muted:#93a4b8;--line:#2a3a4f;--accent:#7b9bff;--on-accent:#0b1220;--err:#f0935a}}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans)}
-header{max-width:1100px;margin:0 auto;padding:28px 20px 8px}
-h1{margin:0;font-size:28px;font-weight:600;letter-spacing:-.01em}
-header p{margin:4px 0 0;color:var(--muted)}
-.app{max-width:1100px;margin:0 auto;padding:16px 20px 40px;display:grid;grid-template-columns:200px 1fr;gap:20px}
-nav{display:flex;flex-direction:column;gap:4px}
-nav button{text-align:left;background:none;border:0;border-left:3px solid var(--line);padding:8px 12px;color:var(--ink);font:inherit;cursor:pointer;border-radius:0 6px 6px 0}
-nav button small{display:block;color:var(--muted);font-size:13px}
-nav button:hover{background:var(--panel)}
-nav button[aria-current=true]{border-left-color:var(--accent);background:var(--panel);font-weight:600}
-.bar{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:12px}
-.seg,.acts{display:flex;flex-wrap:wrap;gap:6px}
-.seg button{background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:5px 12px;border-radius:6px;font:inherit;cursor:pointer}
-.seg button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-.acts button{background:none;border:1px solid var(--line);color:var(--ink);padding:5px 10px;border-radius:6px;font:inherit;cursor:pointer}
-.acts button:hover:not(:disabled){border-color:var(--accent)}
-.acts button:disabled{opacity:.45;cursor:default}
-button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.cols label{display:block;font-weight:500;margin-bottom:4px;color:var(--muted)}
-textarea,pre{width:100%;height:420px;margin:0;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:13.5px/1.55 var(--mono);overflow:auto;resize:vertical;white-space:pre-wrap;word-break:break-word}
-pre.err{color:var(--err)}
-@media (max-width:760px){.app{grid-template-columns:1fr}nav{flex-direction:row;overflow-x:auto}nav button{border-left:0;border-bottom:3px solid var(--line);border-radius:6px 6px 0 0;white-space:nowrap}nav button[aria-current=true]{border-bottom-color:var(--accent)}nav small{display:none}.cols{grid-template-columns:1fr}textarea,pre{height:260px}}
-</style>
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <header>
@@ -58,129 +31,8 @@ pre.err{color:var(--err)}
 </div>
 </main>
 </div>
-<script>
-const $ = s => document.querySelector(s);
-
-// Helpers
-const toB64 = s => { let r = ""; new TextEncoder().encode(s).forEach(x => r += String.fromCharCode(x)); return btoa(r); };
-const fromB64 = s => { s = s.trim().replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; return new TextDecoder().decode(Uint8Array.from(atob(s), c => c.charCodeAt(0))); };
-const urlSafe = s => s.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-const pretty = o => JSON.stringify(o, null, 2);
-
-function relative(d) {
-  const s = Math.round((d - Date.now()) / 1000), a = Math.abs(s);
-  const units = [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60], ["second", 1]];
-  const [name, sec] = units.find(u => a >= u[1]) || units[5];
-  return new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(Math.round(s / sec), name);
-}
-
-function jwt(i) {
-  const p = i.trim().split(".");
-  if (p.length < 2) throw new Error("A JWT has three parts separated by dots (header.payload.signature).");
-  const h = JSON.parse(fromB64(p[0])), b = JSON.parse(fromB64(p[1]));
-  let out = "Header\n" + pretty(h) + "\n\nPayload\n" + pretty(b) + "\n";
-  ["iat", "nbf", "exp"].forEach(k => { if (typeof b[k] === "number") out += `\n${k.padEnd(4)} ${new Date(b[k] * 1000).toISOString()}`; });
-  if (typeof b.exp === "number") out += "\n\nStatus: " + (b.exp * 1000 < Date.now() ? "expired" : "not expired");
-  return out + "\n\nThe signature is not verified.";
-}
-
-function timestamp(i) {
-  i = i.trim();
-  const d = /^-?\d+(\.\d+)?$/.test(i) ? new Date(Math.abs(+i) < 1e11 ? +i * 1000 : +i) : new Date(i);
-  if (isNaN(d)) throw new Error("Enter a Unix timestamp or a date such as 2026-11-09T12:00:00Z.");
-  return [
-    ["Unix (s)", Math.floor(d / 1000)], ["Unix (ms)", d.getTime()],
-    ["UTC", d.toISOString()], ["Local", d.toString()], ["Relative", relative(d)]
-  ].map(([k, v]) => k.padEnd(10) + v).join("\n");
-}
-
-function parseUrl(i) {
-  const u = new URL(i.trim());
-  let out = ["Protocol  " + u.protocol, "Host      " + u.host, "Path      " + u.pathname, "Hash      " + (u.hash || "(none)")].join("\n");
-  const q = [...u.searchParams];
-  out += "\n\nQuery parameters" + (q.length ? "" : "\n(none)");
-  q.forEach(([k, v]) => out += `\n${k} = ${v}`);
-  return out;
-}
-
-// Tool definitions: each mode turns the input text into output text, or throws an Error
-const TOOLS = [
-  { id: "json", name: "JSON", desc: "Format and validate",
-    example: '{"name":"dev-toolbox","tags":["json","base64"],"private":false}',
-    modes: [["Format", i => pretty(JSON.parse(i))], ["Minify", i => JSON.stringify(JSON.parse(i))]] },
-  { id: "base64", name: "Base64", desc: "Encode and decode",
-    example: "Hello, Dev Toolbox!",
-    modes: [["Encode", toB64], ["Encode (URL-safe)", i => urlSafe(toB64(i))], ["Decode", fromB64]] },
-  { id: "url", name: "URL", desc: "Encode, decode, parse",
-    example: "https://example.com/search?q=hello world&lang=en#results",
-    modes: [["Encode", encodeURIComponent], ["Decode", decodeURIComponent], ["Parse", parseUrl]] },
-  { id: "jwt", name: "JWT", desc: "Decode tokens",
-    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFkYSIsImlhdCI6MTUxNjIzOTAyMiwiZXhwIjoxNTE2MjQyNjIyfQ.signature",
-    modes: [["Decode", jwt]] },
-  { id: "time", name: "Timestamp", desc: "Unix time and dates",
-    example: String(Math.floor(Date.now() / 1000)),
-    modes: [["Convert", timestamp]] }
-];
-
-const inputs = {};
-let tool = TOOLS[0], mode = 0, hasError = false;
-const inEl = $("#in"), outEl = $("#out");
-
-function run() {
-  const v = inEl.value;
-  inputs[tool.id] = v;
-  outEl.classList.remove("err");
-  hasError = false;
-  if (!v.trim()) { outEl.textContent = ""; }
-  else {
-    try { outEl.textContent = tool.modes[mode][1](v); }
-    catch (e) { outEl.textContent = e.message; outEl.classList.add("err"); hasError = true; }
-  }
-  const empty = !outEl.textContent;
-  $("#copy").disabled = $("#swap").disabled = hasError || empty;
-}
-
-function renderModes() {
-  const box = $("#modes");
-  box.innerHTML = "";
-  tool.modes.forEach(([label], idx) => {
-    const b = document.createElement("button");
-    b.textContent = label;
-    b.setAttribute("aria-pressed", idx === mode);
-    b.onclick = () => { mode = idx; renderModes(); run(); };
-    box.appendChild(b);
-  });
-  box.hidden = tool.modes.length < 2;
-}
-
-function select(id) {
-  tool = TOOLS.find(t => t.id === id) || TOOLS[0];
-  mode = 0;
-  document.querySelectorAll("#nav button").forEach(b => b.setAttribute("aria-current", b.dataset.id === tool.id));
-  inEl.value = inputs[tool.id] || "";
-  renderModes();
-  run();
-}
-
-TOOLS.forEach(t => {
-  const b = document.createElement("button");
-  b.dataset.id = t.id;
-  b.innerHTML = `${t.name}<small>${t.desc}</small>`;
-  b.onclick = () => { location.hash = t.id; };
-  $("#nav").appendChild(b);
-});
-
-inEl.addEventListener("input", run);
-$("#example").onclick = () => { inEl.value = tool.example; run(); };
-$("#clear").onclick = () => { inEl.value = ""; run(); inEl.focus(); };
-$("#swap").onclick = () => { inEl.value = outEl.textContent; run(); };
-$("#copy").onclick = async e => {
-  try { await navigator.clipboard.writeText(outEl.textContent); e.target.textContent = "Copied"; }
-  catch { e.target.textContent = "Copy failed"; }
-  setTimeout(() => e.target.textContent = "Copy output", 1200);
-};
-window.addEventListener("hashchange", () => select(location.hash.slice(1)));
-select(location.hash.slice(1));
-</script>
+<script src="js/helpers.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

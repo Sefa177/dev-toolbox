@@ -22,9 +22,19 @@ Open `index.html` in a browser. There is no build step and no dependencies.
 
 To host it for free, go to **Settings → Pages** in your repo, choose the `main` branch, and your tool will be live at `https://<your-username>.github.io/<repo-name>/`.
 
+## Project structure
+
+```
+index.html        page markup
+css/styles.css    styles
+js/helpers.js     shared helpers (Base64, relative time)
+js/tools.js       tool definitions (add new tools here)
+js/app.js         UI wiring
+```
+
 ## Add a tool
 
-Each tool is one entry in the `TOOLS` array in `index.html`: a name, a description, an example input, and a list of modes. A mode is a function that takes the input text and returns the output text, or throws an `Error` with a message to show.
+Each tool is one entry in the `TOOLS` array in `js/tools.js`: a name, a description, an example input, and a list of modes. A mode is a function that takes the input text and returns the output text, or throws an `Error` with a message to show.
 
 ## License
 

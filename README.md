@@ -1,14 +1,18 @@
 # Dev Toolbox
 
+# !\[Dev Toolbox demo](assets/demo.gif)
+
+# \*\*\[Try it live](https://sefa177.github.io/dev-toolbox/)\*\*
+
 Everyday developer conversions in one page. It runs entirely in your browser, so nothing you paste is uploaded anywhere.
 
 ## Tools
 
-- **JSON**: format, minify, and validate
-- **Base64**: encode (standard or URL-safe) and decode, with full UTF-8 support
-- **URL**: encode, decode, and parse into protocol, host, path, and query parameters
-- **JWT**: decode the header and payload and check expiry (the signature is not verified)
-- **Timestamp**: convert Unix seconds or milliseconds and ISO dates to UTC, local time, and relative time
+* **JSON**: format, minify, and validate
+* **Base64**: encode (standard or URL-safe) and decode, with full UTF-8 support
+* **URL**: encode, decode, and parse into protocol, host, path, and query parameters
+* **JWT**: decode the header and payload and check expiry (the signature is not verified)
+* **Timestamp**: convert Unix seconds or milliseconds and ISO dates to UTC, local time, and relative time
 
 ## Use it
 
@@ -23,3 +27,4 @@ Each tool is one entry in the `TOOLS` array in `index.html`: a name, a descripti
 ## License
 
 MIT
+

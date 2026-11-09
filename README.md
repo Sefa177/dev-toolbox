@@ -1,8 +1,10 @@
 # Dev Toolbox
 
-# !\[Dev Toolbox demo](assets/demo.gif)
+# Dev Toolbox
 
-# \*\*\[Try it live](https://sefa177.github.io/dev-toolbox/)\*\*
+![Dev Toolbox demo](assets/demo.gif)
+
+**[Try it live](https://sefa177.github.io/dev-toolbox/)**
 
 Everyday developer conversions in one page. It runs entirely in your browser, so nothing you paste is uploaded anywhere.
 

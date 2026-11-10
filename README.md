@@ -13,6 +13,7 @@ Everyday developer conversions in one page. It runs entirely in your browser, so
 * **URL**: encode, decode, and parse into protocol, host, path, and query parameters
 * **JWT**: decode the header and payload and check expiry (the signature is not verified)
 * **Timestamp**: convert Unix seconds or milliseconds and ISO dates to UTC, local time, and relative time
+* **UUID**: generate v4 UUIDs (type how many, up to 100) and check whether a UUID is valid
 
 ## Project structure
 

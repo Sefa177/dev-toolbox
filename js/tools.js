@@ -30,6 +30,33 @@ function parseUrl(i) {
   return out;
 }
 
+function uuidV4() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map(x => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+function uuidGenerate(i) {
+  const n = Number(i.trim());
+  if (!Number.isInteger(n) || n < 1 || n > 100) throw new Error("Enter how many UUIDs to generate, from 1 to 100.");
+  return Array.from({ length: n }, uuidV4).join("\n");
+}
+
+function uuidCheck(i) {
+  const v = i.trim();
+  const m = /^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$/i.exec(v);
+  if (!m) throw new Error("Not a valid UUID. Expected 8-4-4-4-12 hex characters, e.g. 3f2b8c1e-9a4d-4e7b-8c15-2d6f0a9b7e41.");
+  const version = parseInt(m[3][0], 16), variant = parseInt(m[4][0], 16);
+  const nil = /^0{8}(-0{4}){3}-0{12}$/.test(v);
+  return [
+    ["Valid", "yes"], ["Version", nil ? "nil (all zeros)" : version],
+    ["Variant", (variant & 0xc) === 0x8 ? "RFC 4122" : "other"], ["Lowercase", v.toLowerCase()]
+  ].map(([k, x]) => k.padEnd(10) + x).join("\n");
+}
+
 const TOOLS = [
   { id: "json", name: "JSON", desc: "Format and validate",
     example: '{"name":"dev-toolbox","tags":["json","base64"],"private":false}',
@@ -45,5 +72,8 @@ const TOOLS = [
     modes: [["Decode", jwt]] },
   { id: "time", name: "Timestamp", desc: "Unix time and dates",
     example: String(Math.floor(Date.now() / 1000)),
-    modes: [["Convert", timestamp]] }
+    modes: [["Convert", timestamp]] },
+  { id: "uuid", name: "UUID", desc: "Generate and check",
+    example: "5",
+    modes: [["Generate (v4)", uuidGenerate], ["Check", uuidCheck]] }
 ];

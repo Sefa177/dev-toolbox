@@ -57,6 +57,128 @@ function uuidCheck(i) {
   ].map(([k, x]) => k.padEnd(10) + x).join("\n");
 }
 
+// ---- Hash ----
+
+async function digest(algo, text) {
+  if (!(globalThis.crypto && crypto.subtle)) throw new Error("The Web Crypto API only works on https:// pages or localhost.");
+  return toHex(await crypto.subtle.digest(algo, new TextEncoder().encode(text)));
+}
+
+const md5Text = t => md5(new TextEncoder().encode(t));
+
+async function hashAll(i) {
+  const rows = [["SHA-256", await digest("SHA-256", i)], ["SHA-1", await digest("SHA-1", i)], ["MD5", md5Text(i)]];
+  return rows.map(([k, v]) => k.padEnd(8) + v).join("\n");
+}
+
+// ---- Color ----
+
+function hslToRgb(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return [f(0), f(8), f(4)].map(x => Math.round(x * 255));
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min, l = (max + min) / 2;
+  let h = 0, s = 0;
+  if (d) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h = (h * 60 + 360) % 360;
+  }
+  return [Math.round(h), Math.round(s * 100), Math.round(l * 100)];
+}
+
+// Reads #rgb, #rgba, #rrggbb, #rrggbbaa, rgb()/rgba(), hsl()/hsla() or a bare "r, g, b". Returns { r, g, b, a }.
+function parseColor(input) {
+  const s = input.trim().toLowerCase();
+  const bad = new Error("Could not read that color. Try #2b59ff, rgb(43, 89, 255) or hsl(228, 100%, 58%).");
+  let m = /^#?([0-9a-f]+)$/.exec(s);
+  if (m && [3, 4, 6, 8].includes(m[1].length)) {
+    let h = m[1];
+    if (h.length < 5) h = [...h].map(c => c + c).join("");
+    const n = i => parseInt(h.slice(i, i + 2), 16);
+    return { r: n(0), g: n(2), b: n(4), a: h.length === 8 ? n(6) / 255 : 1 };
+  }
+  let kind, body;
+  if ((m = /^(rgb|hsl)a?\s*\((.*)\)$/.exec(s))) { kind = m[1]; body = m[2]; }
+  else if (/^[\d.\s,%\/-]+$/.test(s)) { kind = "rgb"; body = s; }
+  else throw bad;
+  const p = body.split(/[\s,\/]+/).filter(Boolean);
+  if (p.length < 3 || p.length > 4) throw bad;
+  const parts = p.map(t => {
+    const x = /^(-?\d*\.?\d+)(%|deg)?$/.exec(t);
+    if (!x) throw new Error(`"${t}" is not a number.`);
+    return { v: parseFloat(x[1]), unit: x[2] };
+  });
+  let a = 1;
+  if (parts[3]) {
+    a = parts[3].unit === "%" ? parts[3].v / 100 : parts[3].v;
+    if (a < 0 || a > 1) throw new Error("Alpha must be between 0 and 1 (or 0% and 100%).");
+  }
+  if (kind === "rgb") {
+    const [r, g, b] = parts.slice(0, 3).map(({ v, unit }) => Math.round(unit === "%" ? v * 2.55 : v));
+    if ([r, g, b].some(x => x < 0 || x > 255)) throw new Error("RGB values must be between 0 and 255.");
+    return { r, g, b, a };
+  }
+  const h = ((parts[0].v % 360) + 360) % 360, sat = parts[1].v, lig = parts[2].v;
+  if (sat < 0 || sat > 100 || lig < 0 || lig > 100) throw new Error("HSL saturation and lightness must be between 0% and 100%.");
+  const [r, g, b] = hslToRgb(h, sat, lig);
+  return { r, g, b, a };
+}
+
+function colorFormats(i) {
+  const c = parseColor(i), [h, s, l] = rgbToHsl(c.r, c.g, c.b);
+  const hasA = c.a < 1, a = +c.a.toFixed(3);
+  const hex = "#" + [c.r, c.g, c.b, ...(hasA ? [Math.round(c.a * 255)] : [])].map(x => x.toString(16).padStart(2, "0")).join("");
+  return {
+    HEX: hex,
+    RGB: hasA ? `rgba(${c.r}, ${c.g}, ${c.b}, ${a})` : `rgb(${c.r}, ${c.g}, ${c.b})`,
+    HSL: hasA ? `hsla(${h}, ${s}%, ${l}%, ${a})` : `hsl(${h}, ${s}%, ${l}%)`
+  };
+}
+
+const colorAll = i => Object.entries(colorFormats(i)).map(([k, v]) => k.padEnd(5) + v).join("\n");
+const colorOne = key => i => colorFormats(i)[key];
+
+function colorPreview(i) {
+  try { const c = parseColor(i); return `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a})`; }
+  catch { return null; }
+}
+
+// ---- Regex ----
+
+// The second argument comes from the Pattern and Flags boxes above the editor.
+function regexTest(text, { pattern, flags }) {
+  if (!pattern) throw new Error("Type a pattern in the box above, for example (\\w+)@(\\w+)\\.com");
+  const re = new RegExp(pattern, [...new Set(flags.replace(/\s/g, ""))].join(""));
+  const LIMIT = 1000, matches = [];
+  if (re.global) { for (const m of text.matchAll(re)) { matches.push(m); if (matches.length >= LIMIT) break; } }
+  else { const m = re.exec(text); if (m) matches.push(m); }
+
+  let html = "", pos = 0;
+  matches.forEach((m, i) => {
+    html += esc(text.slice(pos, m.index));
+    html += m[0] === "" ? '<mark class="z"></mark>' : `<mark class="${i % 2 ? "b" : "a"}">${esc(m[0])}</mark>`;
+    pos = m.index + m[0].length;
+  });
+  html += esc(text.slice(pos));
+
+  const n = matches.length;
+  const lines = [`${n} match${n === 1 ? "" : "es"}${n >= LIMIT ? ` (showing the first ${LIMIT})` : ""}`];
+  const show = v => v === undefined ? "(no match)" : JSON.stringify(v);
+  matches.forEach((m, i) => {
+    lines.push(`#${i + 1}  ${show(m[0])} at ${m.index}`);
+    for (let g = 1; g < m.length; g++) lines.push(`      group ${g}: ${show(m[g])}`);
+    if (m.groups) Object.entries(m.groups).forEach(([k, v]) => lines.push(`      ${k}: ${show(v)}`));
+  });
+  const summary = lines.join("\n");
+  return { html: html + "\n\n" + esc(summary), text: summary };
+}
+
 const TOOLS = [
   { id: "json", name: "JSON", desc: "Format and validate",
     example: '{"name":"dev-toolbox","tags":["json","base64"],"private":false}',
@@ -75,5 +197,17 @@ const TOOLS = [
     modes: [["Convert", timestamp]] },
   { id: "uuid", name: "UUID", desc: "Generate and check",
     example: "5",
-    modes: [["Generate (v4)", uuidGenerate], ["Check", uuidCheck]] }
+    modes: [["Generate (v4)", uuidGenerate], ["Check", uuidCheck]] },
+  { id: "hash", name: "Hash", desc: "SHA-256, SHA-1, MD5",
+    example: "hello world",
+    modes: [["SHA-256", i => digest("SHA-256", i)], ["SHA-1", i => digest("SHA-1", i)], ["MD5", md5Text], ["All", hashAll]] },
+  { id: "color", name: "Color", desc: "HEX, RGB, HSL",
+    example: "#2b59ff",
+    preview: colorPreview,
+    modes: [["All formats", colorAll], ["HEX", colorOne("HEX")], ["RGB", colorOne("RGB")], ["HSL", colorOne("HSL")]] },
+  { id: "regex", name: "Regex", desc: "Test and highlight",
+    example: "Contact ada@example.com or linus@example.org for details.",
+    exampleOpts: { pattern: "(\\w+)@(\\w+)\\.(com|org)", flags: "g" },
+    regex: true, noSwap: true, inLabel: "Test text",
+    modes: [["Test", regexTest]] }
 ];

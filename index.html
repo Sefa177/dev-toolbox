@@ -4,14 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dev Toolbox</title>
+<script>try{var t=localStorage.getItem("devtoolbox-theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <header>
+<div>
 <h1>Dev Toolbox</h1>
 <p>Everyday conversions for developers. They run in your browser and nothing is uploaded.</p>
+</div>
+<button id="theme" class="theme" type="button" aria-label="Switch light or dark theme"></button>
 </header>
 <div class="app">
 <nav id="nav" aria-label="Tools"></nav>
@@ -25,9 +29,15 @@
 <button id="clear">Clear</button>
 </div>
 </div>
+<div class="rx" id="rx" hidden>
+<div><label for="rxPattern">Pattern</label><input id="rxPattern" type="text" spellcheck="false" autocomplete="off" placeholder="(\w+)@(\w+)\.com"></div>
+<div><label for="rxFlags">Flags</label><input id="rxFlags" type="text" value="g" spellcheck="false" autocomplete="off" maxlength="8" placeholder="g i m s u y"></div>
+</div>
 <div class="cols">
 <section><label for="in">Input</label><textarea id="in" spellcheck="false" autocomplete="off"></textarea></section>
-<section><label for="out">Output</label><pre id="out" aria-live="polite"></pre></section>
+<section><label for="out">Output</label>
+<div class="outwrap"><pre id="out" aria-live="polite"></pre><div id="swatch" class="swatch" hidden><i></i></div></div>
+</section>
 </div>
 </main>
 </div>

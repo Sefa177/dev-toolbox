@@ -1,6 +1,5 @@
 # Dev Toolbox
 
-![Dev Toolbox demo](assets/demo.gif)
 
 **[Try it live](https://sefa177.github.io/dev-toolbox/)**
 
